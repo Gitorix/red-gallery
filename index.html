@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>RED GALLERY</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* 全体設定 */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #fff;
+      background: #000;
+      overflow-x: hidden;
+      overflow-y: auto; /* 縦スクロールは許可 */
+    }
+
+    /* ==== 背景レイヤー ==== */
+
+    .bg-gradient {
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(circle at 10% 10%, #b00020 0, transparent 45%),
+        radial-gradient(circle at 80% 80%, #ff1744 0, transparent 50%),
+        radial-gradient(circle at 20% 80%, #880000 0, transparent 55%),
+        #000;
+      animation: bgMove 18s ease-in-out infinite alternate;
+      z-index: 0;
+    }
+
+    @keyframes bgMove {
+      0% {
+        background-position: 0% 0%, 100% 100%, 0% 100%;
+      }
+      100% {
+        background-position: 20% 10%, 80% 90%, 10% 80%;
+      }
+    }
+
+    .bg-glow {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.14) 0, transparent 50%),
+        radial-gradient(circle at 70% 80%, rgba(255, 0, 0, 0.2) 0, transparent 55%);
+      mix-blend-mode: screen;
+      opacity: 0.8;
+      animation: glowPulse 10s ease-in-out infinite alternate;
+      z-index: 1;
+    }
+
+    @keyframes glowPulse {
+      0% { opacity: 0.5; }
+      100% { opacity: 0.9; }
+    }
+
+    .bg-lines {
+      position: fixed;
+      inset: 0;
+      background-image: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.06),
+        rgba(255, 255, 255, 0.0)
+      );
+      background-size: 1px 120px;
+      background-repeat: repeat-x;
+      opacity: 0.25;
+      animation: linesFall 6s linear infinite;
+      z-index: 1;
+      mask-image: radial-gradient(circle at center, black 0, transparent 80%);
+    }
+
+    @keyframes linesFall {
+      from { background-position: 0 -120px; }
+      to   { background-position: 0 0; }
+    }
+
+    /* ==== 中央コンテンツ ==== */
+
+    .wrapper {
+      position: relative;
+      z-index: 5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .panel {
+      width: 100%;
+      max-width: 1200px;
+      background: rgba(0, 0, 0, 0.72);
+      border-radius: 24px;
+      border: 1px solid rgba(255, 0, 0, 0.5);
+      box-shadow:
+        0 0 40px rgba(0, 0, 0, 0.9),
+        0 0 40px rgba(255, 0, 0, 0.45);
+      backdrop-filter: blur(18px);
+      padding: 24px 28px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      animation: panelFadeIn 0.8s ease-out;
+    }
+
+    @keyframes panelFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(16px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .site-title {
+      font-size: clamp(20px, 3vw, 26px);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: #ff5252;
+      text-shadow:
+        0 0 10px rgba(255, 82, 82, 0.8),
+        0 0 20px rgba(255, 0, 0, 0.6);
+      white-space: nowrap;
+    }
+
+    .site-sub {
+      font-size: 12px;
+      opacity: 0.7;
+      text-align: right;
+    }
+
+    .panel-main {
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      gap: 18px;
+    }
+
+    @media (max-width: 880px) {
+      .panel-main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* メイン画像エリア */
+
+    .main-image-wrapper {
+      position: relative;
+      border-radius: 18px;
+      overflow: hidden;
+      background: radial-gradient(circle at top, #333, #000); /* 黒基調 */
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      min-height: 320px;
+    }
+
+    .main-image-wrapper::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.18), transparent 60%);
+      mix-blend-mode: screen;
+      pointer-events: none;
+    }
+
+    .main-image {
+      width: 100%;
+      height: 100%;
+      max-height: 520px;
+      object-fit: contain;
+      display: block;
+      transition: transform 0.5s ease, filter 0.5s ease;
+    }
+
+    .main-image-wrapper:hover .main-image {
+      transform: scale(1.03);
+      filter: brightness(1.03);
+    }
+
+    /* 03〜17 用：白基調 + ウェーブ光 */
+    .main-image-wrapper.light {
+      background: #f7f7f7;
+      border-color: rgba(0, 0, 0, 0.08);
+    }
+
+    .main-image-wrapper.light::before {
+      content: "";
+      position: absolute;
+      inset: -30%;
+      background:
+        linear-gradient(
+          120deg,
+          rgba(255, 255, 255, 0) 5%,
+          rgba(255, 255, 255, 0.85) 35%,
+          rgba(255, 255, 255, 0) 70%
+        );
+      opacity: 0.9;
+      mix-blend-mode: screen;
+      pointer-events: none;
+      animation: waveMove 7s linear infinite;
+    }
+
+    @keyframes waveMove {
+      0% {
+        transform: translateX(-40%) translateY(0) rotate(8deg);
+      }
+      50% {
+        transform: translateX(10%) translateY(5%) rotate(-4deg);
+      }
+      100% {
+        transform: translateX(50%) translateY(0) rotate(8deg);
+      }
+    }
+
+    /* 情報＆サムネイルエリア */
+
+    .info-block {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .image-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .image-desc {
+      font-size: 13px;
+      line-height: 1.7;
+      opacity: 0.85;
+    }
+
+    .thumbs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      max-height: 380px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .thumb {
+      width: calc(33.333% - 6px);
+      max-width: 120px;
+      aspect-ratio: 1 / 1;
+      border-radius: 10px;
+      overflow: hidden;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+      opacity: 0.7;
+    }
+
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transform: scale(1.05);
+      transition: transform 0.3s ease;
+    }
+
+    .thumb::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.4), transparent);
+      opacity: 0.6;
+      transition: opacity 0.3s ease;
+    }
+
+    /* 黒基調サムネ（01・02） */
+    .thumb.dark {
+      background: #111;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+    }
+
+    /* 白基調サムネ（03〜17） */
+    .thumb.light {
+      background: #f7f7f7;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+    }
+
+    .thumb:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 16px rgba(255, 0, 0, 0.5);
+      opacity: 1;
+      border-color: #ff5252;
+    }
+
+    .thumb:hover img {
+      transform: scale(1.12);
+    }
+
+    .thumb:hover::after {
+      opacity: 0.2;
+    }
+
+    .thumb.active {
+      opacity: 1;
+      border-color: #ff5252;
+      box-shadow: 0 0 12px rgba(255, 0, 0, 0.7);
+    }
+
+    .thumb-label {
+      position: absolute;
+      left: 6px;
+      bottom: 6px;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #fff;
+      z-index: 2;
+      text-shadow: 0 0 4px rgba(0, 0, 0, 0.9);
+    }
+
+    .thumb.light .thumb-label {
+      color: #222;
+      text-shadow: 0 0 2px #fff;
+    }
+
+    .panel-footer {
+      margin-top: 4px;
+      font-size: 10px;
+      opacity: 0.6;
+      text-align: right;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <!-- 背景レイヤー -->
+  <div class="bg-gradient"></div>
+  <div class="bg-glow"></div>
+  <div class="bg-lines"></div>
+
+  <!-- コンテンツ -->
+  <div class="wrapper">
+    <div class="panel">
+      <div class="panel-header">
+        <div class="site-title">RED GALLERY</div>
+        <div class="site-sub">SELECTED VISUAL COLLECTION</div>
+      </div>
+
+      <div class="panel-main">
+        <!-- メイン画像 -->
+        <div id="mainWrapper" class="main-image-wrapper">
+          <img id="mainImage" class="main-image" src="images/01.png" alt="メイン画像">
+        </div>
+
+        <!-- 説明＆サムネイル -->
+        <div class="info-block">
+          <div>
+            <div id="imageTitle" class="image-title">TEAM RED タグ 01</div>
+            <p id="imageDesc" class="image-desc">
+              それぞれの参加者のイラストを、赤と白の世界観でまとめたコレクションです。
+              サムネイルをクリックすると、左のメインエリアに大きく表示されます。
+            </p>
+          </div>
+
+          <div class="thumbs" id="thumbs">
+            <!-- 01・02：黒基調 -->
+            <div class="thumb active dark" data-src="images/01.png"
+                 data-title="TEAM RED タグ 01"
+                 data-desc="01番のイラストです。"
+                 data-theme="dark">
+              <img src="images/01.png" alt="">
+              <span class="thumb-label">NO.01</span>
+            </div>
+
+            <div class="thumb dark" data-src="images/02.png"
+                 data-title="TEAM RED タグ 02"
+                 data-desc="02番のイラストです。"
+                 data-theme="dark">
+              <img src="images/02.png" alt="">
+              <span class="thumb-label">NO.02</span>
+            </div>
+
+            <!-- 03〜17：白基調 + ウェーブ光 -->
+            <div class="thumb light" data-src="images/03.png"
+                 data-title="TEAM RED タグ 03"
+                 data-desc="03番のイラストです。"
+                 data-theme="light">
+              <img src="images/03.png" alt="">
+              <span class="thumb-label">NO.03</span>
+            </div>
+
+            <div class="thumb light" data-src="images/04.png"
+                 data-title="TEAM RED タグ 04"
+                 data-desc="04番のイラストです。"
+                 data-theme="light">
+              <img src="images/04.png" alt="">
+              <span class="thumb-label">NO.04</span>
+            </div>
+
+            <div class="thumb light" data-src="images/05.png"
+                 data-title="TEAM RED タグ 05"
+                 data-desc="05番のイラストです。"
+                 data-theme="light">
+              <img src="images/05.png" alt="">
+              <span class="thumb-label">NO.05</span>
+            </div>
+
+            <div class="thumb light" data-src="images/06.png"
+                 data-title="TEAM RED タグ 06"
+                 data-desc="06番のイラストです。"
+                 data-theme="light">
+              <img src="images/06.png" alt="">
+              <span class="thumb-label">NO.06</span>
+            </div>
+
+            <div class="thumb light" data-src="images/07.png"
+                 data-title="TEAM RED タグ 07"
+                 data-desc="07番のイラストです。"
+                 data-theme="light">
+              <img src="images/07.png" alt="">
+              <span class="thumb-label">NO.07</span>
+            </div>
+
+            <div class="thumb light" data-src="images/08.png"
+                 data-title="TEAM RED タグ 08"
+                 data-desc="08番のイラストです。"
+                 data-theme="light">
+              <img src="images/08.png" alt="">
+              <span class="thumb-label">NO.08</span>
+            </div>
+
+            <div class="thumb light" data-src="images/09.png"
+                 data-title="TEAM RED タグ 09"
+                 data-desc="09番のイラストです。"
+                 data-theme="light">
+              <img src="images/09.png" alt="">
+              <span class="thumb-label">NO.09</span>
+            </div>
+
+            <div class="thumb light" data-src="images/10.png"
+                 data-title="TEAM RED タグ 10"
+                 data-desc="10番のイラストです。"
+                 data-theme="light">
+              <img src="images/10.png" alt="">
+              <span class="thumb-label">NO.10</span>
+            </div>
+
+            <div class="thumb light" data-src="images/11.png"
+                 data-title="TEAM RED タグ 11"
+                 data-desc="11番のイラストです。"
+                 data-theme="light">
+              <img src="images/11.png" alt="">
+              <span class="thumb-label">NO.11</span>
+            </div>
+
+            <div class="thumb light" data-src="images/12.png"
+                 data-title="TEAM RED タグ 12"
+                 data-desc="12番のイラストです。"
+                 data-theme="light">
+              <img src="images/12.png" alt="">
+              <span class="thumb-label">NO.12</span>
+            </div>
+
+            <div class="thumb light" data-src="images/13.png"
+                 data-title="TEAM RED タグ 13"
+                 data-desc="13番のイラストです。"
+                 data-theme="light">
+              <img src="images/13.png" alt="">
+              <span class="thumb-label">NO.13</span>
+            </div>
+
+            <div class="thumb light" data-src="images/14.png"
+                 data-title="TEAM RED タグ 14"
+                 data-desc="14番のイラストです。"
+                 data-theme="light">
+              <img src="images/14.png" alt="">
+              <span class="thumb-label">NO.14</span>
+            </div>
+
+            <div class="thumb light" data-src="images/15.png"
+                 data-title="TEAM RED タグ 15"
+                 data-desc="15番のイラストです。"
+                 data-theme="light">
+              <img src="images/15.png" alt="">
+              <span class="thumb-label">NO.15</span>
+            </div>
+
+            <div class="thumb light" data-src="images/16.png"
+                 data-title="TEAM RED タグ 16"
+                 data-desc="16番のイラストです。"
+                 data-theme="light">
+              <img src="images/16.png" alt="">
+              <span class="thumb-label">NO.16</span>
+            </div>
+
+            <div class="thumb light" data-src="images/17.png"
+                 data-title="TEAM RED タグ 17"
+                 data-desc="17番のイラストです。"
+                 data-theme="light">
+              <img src="images/17.png" alt="">
+              <span class="thumb-label">NO.17</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-footer">
+        © 2025 YOUR BRAND NAME
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // サムネイルをクリックしたらメイン画像＆テキスト切り替え + 背景テーマ切替
+    document.addEventListener("DOMContentLoaded", function () {
+      const mainImage = document.getElementById("mainImage");
+      const imageTitle = document.getElementById("imageTitle");
+      const imageDesc = document.getElementById("imageDesc");
+      const thumbs = document.querySelectorAll(".thumb");
+      const mainWrapper = document.getElementById("mainWrapper");
+
+      thumbs.forEach(function (thumb) {
+        thumb.addEventListener("click", function () {
+          const src = this.getAttribute("data-src");
+          const title = this.getAttribute("data-title") || "";
+          const desc = this.getAttribute("data-desc") || "";
+          const theme = this.getAttribute("data-theme") || "dark";
+
+          // メイン画像切り替え
+          mainImage.src = src;
+          mainImage.alt = title;
+
+          // テキスト切り替え
+          imageTitle.textContent = title;
+          imageDesc.textContent = desc;
+
+          // activeクラスの付け替え
+          thumbs.forEach(t => t.classList.remove("active"));
+          this.classList.add("active");
+
+          // 背景テーマ切り替え
+          mainWrapper.classList.remove("light");
+          if (theme === "light") {
+            mainWrapper.classList.add("light");
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>
